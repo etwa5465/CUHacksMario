@@ -29,11 +29,14 @@ const MarioAI = () => {
   }, []);
 
   return (
-    <div style={{ textAlign: "center", color: "white" }}>
-      <h1>Mario AI</h1>
-      <p>Status: {status}</p>
-      {imageSrc && <img src={imageSrc} alt="Mario AI Gameplay" width="512" height="512" />}
+    <div style={{ backgroundColor: "#222", minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
+      <div style={{ textAlign: "center", color: "white" }}>
+        <h1>AstroMario AI</h1>
+        <p>Status: {status}</p>
+        {imageSrc && <img src={imageSrc} alt="Mario AI Gameplay" width="512" height="512" />}
+      </div>
     </div>
+
   );
 };
 
