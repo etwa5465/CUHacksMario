@@ -1,36 +1,42 @@
-import gymnasium as gym
+import os
+import torch
 from stable_baselines3 import PPO
-from stable_baselines3.common.policies import ActorCriticCnnPolicy  # ✅ Add this import
-from mario_env import MarioEnv
+from mario_env import CustomMarioEnv  # Import your custom environment
 
-# ✅ Print debug message before environment creation
-print("🛠️ Creating Mario Environment...")
+# Ensure models directory exists
+if not os.path.exists("models"):
+    os.makedirs("models")
 
-# ✅ Create environment WITHOUT opening a Pygame window
-env = MarioEnv(render_mode="rgb_array")
+# Create custom environment
+env = CustomMarioEnv()
 
-# ✅ Print message before PPO initialization
-print("🚀 Initializing PPO Model...")
+# Check if CUDA is available for faster training
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 
-# ✅ Train AI using PPO
-model = PPO(
-    ActorCriticCnnPolicy,
-    env,
-    verbose=1,
-    n_steps=100,  # ✅ Train for exactly 100 steps
-    n_epochs=1,   # ✅ Ensure PPO doesn't over-optimize
-)
+# Model path
+MODEL_PATH = "models/mario_ai_model.zip"
 
-# ✅ Print message before training starts
-print("🎮 Starting AI Training...")
+# Load existing model if available, otherwise create a new one
+if os.path.exists(MODEL_PATH):
+    print(f"Loading existing model from {MODEL_PATH}")
+    model = PPO.load(MODEL_PATH, env=env, device=device)
+else:
+    print("No existing model found. Creating a new PPO model...")
+    model = PPO("CnnPolicy", env, verbose=1, device=device)
 
-# ✅ Train for a fixed number of timesteps with a progress bar
-model.learn(total_timesteps=100, progress_bar=True)
+# Train AI
+TOTAL_TIMESTEPS = 100_000  # Increase for better performance
+CHECKPOINT_INTERVAL = 10_000  # Save model every 100k steps
 
-# ✅ Print message when training completes
-print("✅ Training Complete. Saving model...")
+for i in range(TOTAL_TIMESTEPS // CHECKPOINT_INTERVAL):
+    print(f"Training iteration {i+1}/{TOTAL_TIMESTEPS // CHECKPOINT_INTERVAL}...")
+    model.learn(total_timesteps=CHECKPOINT_INTERVAL, progress_bar=True)
+    
+    # Save checkpoint
+    checkpoint_path = f"models/mario_ai_model_{(i+1) * CHECKPOINT_INTERVAL}.zip"
+    print(f"Checkpoint saved: {checkpoint_path}")
 
-# ✅ Save the trained model
-model.save("mario_ai_model")
-
-print("💾 AI Model Saved!")
+# Final save
+model.save(MODEL_PATH)
+print(f"Training complete! Model saved at {MODEL_PATH}")

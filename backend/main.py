@@ -1,37 +1,38 @@
 from fastapi import FastAPI, WebSocket
 import numpy as np
 import cv2
-from mario_env import MarioEnv
+import asyncio
 from stable_baselines3 import PPO
+from mario_env import CustomMarioEnv  
 
 app = FastAPI()
 
-# Load AI Model
-model = PPO.load("models/mario_ai_model.zip")
-
-# Initialize Mario AI Environment (headless mode)
-env = MarioEnv(render_mode="rgb_array")
-obs, _ = env.reset()
+# ✅ Load the AI model
+MODEL_PATH = "models/mario_ai_model.zip"
+model = PPO.load(MODEL_PATH)
+env = CustomMarioEnv()
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
+    obs = env.reset()
     done = False
 
-    while not done:
-        # AI Chooses an Action
-        action, _ = model.predict(obs)
+    try:
+        while True:
+            action, _ = model.predict(obs)
+            obs, reward, done, _ = env.step(action)
+            env.render()  
 
-        # Apply Action to Environment
-        obs, reward, done, _, _ = env.step(action)
+            frame = env.get_frame()  
+            _, buffer = cv2.imencode(".jpg", frame)  
+            await websocket.send_bytes(buffer.tobytes())
 
-        # Capture the game frame
-        frame = env.render()
-        frame = cv2.resize(frame, (400, 300))  # Resize for faster streaming
-        _, buffer = cv2.imencode(".jpg", frame)
-        image_bytes = buffer.tobytes()
+            if done:
+                obs = env.reset()
 
-        # Send Frame to WebSocket
-        await websocket.send_bytes(image_bytes)
-
-    env.close()
+            await asyncio.sleep(0.03)  
+    except Exception as e:
+        print("WebSocket Error:", e)
+    finally:
+        env.close()

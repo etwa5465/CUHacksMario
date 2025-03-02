@@ -1,40 +1,32 @@
-import gymnasium as gym
+import torch
+import numpy as np
+import cv2
 from stable_baselines3 import PPO
-from mario_env import MarioEnv
-import pygame
+from mario_env import CustomMarioEnv  # Import your custom environment
 
-# Initialize Pygame
-pygame.init()
+# Load environment
+env = CustomMarioEnv()
 
-# Create environment with "human" render mode to view gameplay
-env = MarioEnv(render_mode="human")  # Ensure this renders the game to the screen
+# Load trained model
+MODEL_PATH = "models/mario_ai_model.zip"
 
-# Load the trained model
-model = PPO.load("mario_ai_model")
+try:
+    model = PPO.load(MODEL_PATH)
+    print(f"Loaded model from {MODEL_PATH}")
+except FileNotFoundError:
+    print(f"Error: Model file {MODEL_PATH} not found! Train the model first.")
+    exit()
 
-# Initialize the environment and get the first observation
-obs, info = env.reset()
-
+# Run AI in environment
+obs = env.reset()
 done = False
 
-# Start the event loop for Pygame to prevent freezing and handle user events
-while not done:
-    for event in pygame.event.get():  # Check for any events (like closing the window)
-        if event.type == pygame.QUIT:
-            done = True  # Exit the loop if the user closes the window
+while True:  # Infinite loop to keep playing
+    action, _ = model.predict(obs)  # AI decides action
+    obs, reward, terminated, _, _ = env.step(action)  # Step in env
+    
+    env.render()  # Show the game window
 
-    # Get action from the model
-    action, _states = model.predict(obs)
-
-    # Take the action in the environment
-    obs, reward, done, _, info = env.step(action)
-
-    # Render the game
-    env.render()
-
-    # Explicitly update the display (important for some systems)
-    pygame.display.update()
-
-# Close the environment and Pygame window
-env.close()
-pygame.quit()
+    if terminated:
+        print("Episode finished, restarting...")
+        obs = env.reset()
