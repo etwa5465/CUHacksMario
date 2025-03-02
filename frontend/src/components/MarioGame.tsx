@@ -95,7 +95,7 @@ const MarioGame: React.FC = () => {
       goomba.setBounce(0.2);
       goomba.setCollideWorldBounds(true);
 
-      goomba2 = this.physics.add.sprite(430, 100, 'goomba');
+      goomba2 = this.physics.add.sprite(400, 100, 'goomba');
       goomba2.setBounce(0.2);
       goomba2.setCollideWorldBounds(true);
 
@@ -119,6 +119,38 @@ const MarioGame: React.FC = () => {
         repeat: -1,
       });
 
+      // Use a timed event to change direction every 2 seconds
+      this.physics.world.once('worldstep', () => {
+        goomba.setVelocityX(20); // Start moving right
+      });
+
+      // Use a timer to switch direction every 2 seconds
+      this.time.addEvent({
+        delay: 5000,
+        loop: true,
+        callback: () => {
+          if (goomba.body) { // Ensure body exists before modifying velocity
+            goomba.setVelocityX(goomba.body.velocity.x * -1);
+          }
+        }
+      });
+
+      this.physics.world.once('worldstep', () => {
+        goomba2.setVelocityX(20); // Start moving right
+      });
+
+      // Use a timer to switch direction every 2 seconds
+      this.time.addEvent({
+        delay: 3000,
+        loop: true,
+        callback: () => {
+          if (goomba2.body) { // Ensure body exists before modifying velocity
+            goomba2.setVelocityX(goomba2.body.velocity.x * -1);
+          }
+        }
+      });
+
+
       // Collide player with platforms
       this.physics.add.collider(player, platforms);
 
@@ -126,60 +158,69 @@ const MarioGame: React.FC = () => {
       this.physics.add.collider(goomba, platforms);
       this.physics.add.collider(goomba2, platforms);
 
-      const flagtouch = false;
-      const goombatouch = false;
+      player.setData('hasLost', false);
 
-      if (!goombatouch) {
-        // Detect collision between player and flag
-        this.physics.add.overlap(player, flag, () => {
+
+
+
+      // Detect collision between player and flag
+      this.physics.add.overlap(player, flag, () => {
+        if (!player.getData('hasLost')) {
           // Freeze Mario
           player.setVelocity(0, 0);
           player.anims.stop(); // Stop animations
           player.setTint(0x00ff00); // Optional: Add a visual effect (e.g., tint Mario green)
 
           // Display "Level Over" message
-          const levelOverText = this.add.text(400, 300, 'Level Over', {
+          const levelOverText = this.add.text(400, 300, 'You won', {
             fontSize: '48px',
             color: '#ffffff',
             fontFamily: 'Arial',
           });
           levelOverText.setOrigin(0.5, 0.5); // Center the text
-        });
-      }
+        }
+      });
 
 
-      if (!flagtouch) {
-        // Detect collision between player and goomba
-        this.physics.add.overlap(player, goomba, () => {
-          // Freeze Mario
+
+
+      // Detect collision between player and goomba
+      this.physics.add.overlap(player, goomba, () => {
+        // Freeze Mario
+        if (!player.getData('hasLost')) {
+          player.setData('hasLost', true);
           player.setVelocity(0, 0);
           player.anims.stop(); // Stop animations
           player.setTint(0xB22222); // Optional: Add a visual effect (e.g., tint Mario red)
 
           // Display "Level Over" message
-          const levelOverText = this.add.text(400, 300, 'Level Over', {
+          const levelOverText = this.add.text(400, 300, 'Game Over', {
             fontSize: '48px',
             color: '#ffffff',
             fontFamily: 'Arial',
           });
           levelOverText.setOrigin(0.5, 0.5); // Center the text
-        });
+        }
+      });
 
-        this.physics.add.overlap(player, goomba2, () => {
-          // Freeze Mario
+      this.physics.add.overlap(player, goomba2, () => {
+        // Freeze Mario
+        if (!player.getData('hasLost')) {
+          player.setData('hasLost', true);
           player.setVelocity(0, 0);
           player.anims.stop(); // Stop animations
           player.setTint(0xB22222); // Optional: Add a visual effect (e.g., tint Mario red)
 
           // Display "Level Over" message
-          const levelOverText = this.add.text(400, 300, 'Level Over', {
+          const levelOverText = this.add.text(400, 300, 'Game Over', {
             fontSize: '48px',
             color: '#ffffff',
             fontFamily: 'Arial',
           });
           levelOverText.setOrigin(0.5, 0.5); // Center the text
-        });
-      }
+        }
+      });
+
 
     }
 
@@ -190,7 +231,7 @@ const MarioGame: React.FC = () => {
         console.log('Left:', cursors.left.isDown);
         console.log('Right:', cursors.right.isDown);
         console.log('Up:', cursors.up.isDown);
-
+        console.log("tint:", player.isTinted)
 
 
 
